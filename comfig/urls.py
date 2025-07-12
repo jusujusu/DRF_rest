@@ -19,5 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls), # Django 관리자 사이트 URL.
+    path('api/auth/', include('accounts.urls')), # accounts 앱의 URL을 'api/auth/' 아래에 포함 (인증 관련)
     path('api/', include('posts.urls')), # 'posts' 앱의 URL을 'api/' 접두사 아래에 포함
 ]
