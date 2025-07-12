@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User # Django의 내장 User 모델
 from django.db import models
 
@@ -8,7 +9,7 @@ class Post(models.Model):
     content = models.TextField()
 
     # author는 DRF 기존 User 모델로 연동
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='posts')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -27,7 +28,7 @@ class Comment(models.Model):
     # Post 모델에 대한 ForeignKey. 댓글을 특정 게시물과 연결
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     # author는 DRF 기존 User 모델로 연동
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
