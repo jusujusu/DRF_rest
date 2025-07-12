@@ -6,7 +6,7 @@ boot에서 DTO의 역할
 
 
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from accounts.models import User
 from .models import Post, Comment
 
 
