@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import Post, Comment
@@ -18,7 +19,7 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-
+"""
 # Class 모델 serializer,
 class CommentSerializer(serializers.ModelSerializer):
     # 'author' 필드는 AuthorSerializer를 사용하여 직렬화 (읽기 전용).
@@ -32,11 +33,42 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'content', 'author', 'author_id', 'created_at', 'updated_at')
         # 읽기 전용 필드 (클라이언트에서 설정할 수 없음).
         read_only_fields = ('id', 'created_at', 'updated_at')
-
+    
     # author_id를 처리하기 위한 커스텀 생성 메서드
     def create(self, validated_data):
         # DRF는 뷰셋에 의해 validated_data에 'post' 필드가 있는 경우 이를 자동으로 처리
         return Comment.objects.create(**validated_data)
+"""
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    # 'author' 필드는 AuthorSerializer를 사용하여 직렬화 (읽기 전용).
+    author = AuthorSerializer(read_only=True)
+    # 'author_id'는 쓰기 전용 필드로, 작성자 ID를 사용하여 댓글을 생성/업데이트하는 데 사용
+    author_id = serializers.IntegerField(write_only=True, required=False)
+    # post 필드 (쓰기 전용이지만 DRF 웹 인터페이스에 표시되도록 함)
+    post = serializers.PrimaryKeyRelatedField(
+        queryset=Post.objects.all(),
+        help_text="댓글을 작성할 게시물의 ID"
+    )
+
+    class Meta:
+        model = Comment
+        # 직렬화에 포함할 필드.
+        fields = ('id', 'content', 'author', 'author_id', 'post', 'created_at', 'updated_at')
+        # 읽기 전용 필드 (클라이언트에서 설정할 수 없음).
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        # author_id가 없으면 현재 사용자로 설정
+        if 'author_id' not in validated_data and 'request' in self.context:
+            validated_data['author_id'] = self.context['request'].user.id
+
+        # Comment 생성
+        comment = Comment.objects.create(**validated_data)
+        return comment
+
+
 
 
 # Post 모델 serializer, 상세 보기(조회, 생성, 업데이트)에 사용
