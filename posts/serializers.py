@@ -13,74 +13,10 @@ from .models import Post, Comment
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username')
+        fields = ('id', 'username', 'role')
 
 
-class PostListSerializer(serializers.ModelSerializer):
-    """포스트 목록용 간단한 serializer"""
-    author = AuthorSerializer(read_only=True)
-
-    class Meta:
-        model = Post
-        fields = ('id', 'title', 'author')
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer(read_only=True)
-    author_username = serializers.CharField(write_only=True)  # 사용자 이름 입력받기
-    post_id = serializers.IntegerField(write_only=True)  # post_id 필드 추가
-    post = PostListSerializer(read_only=True)  # 읽기 전용 post 정보
-
-    class Meta:
-        model = Comment
-        fields = ('id', 'content', 'author', 'author_username', 'post', 'post_id', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def create(self, validated_data):
-        # post_id를 post로 변환
-        post_id = validated_data.pop('post_id')
-        author_username = validated_data.pop('author_username')
-
-        try:
-            post = Post.objects.get(id=post_id)
-            author = User.objects.get(username=author_username)
-        except Post.DoesNotExist:
-            raise serializers.ValidationError("해당 포스트가 존재하지 않습니다.")
-        except User.DoesNotExist:
-            raise serializers.ValidationError(f"사용자 '{author_username}'이 존재하지 않습니다.")
-
-        return Comment.objects.create(
-            post=post,
-            author=author,
-            **validated_data
-        )
-
-
-class PostSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer(read_only=True)
-    author_username = serializers.CharField(write_only=True)  # 사용자 이름 입력받기
-    comments = CommentSerializer(many=True, read_only=True)
-    comments_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Post
-        fields = ('id', 'title', 'content', 'author', 'author_username', 'comments', 'comments_count', 'created_at',
-                  'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def get_comments_count(self, obj):
-        return obj.comments.count()
-
-    def create(self, validated_data):
-        author_username = validated_data.pop('author_username')
-        try:
-            author = User.objects.get(username=author_username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(f"사용자 '{author_username}'이 존재하지 않습니다.")
-
-        return Post.objects.create(author=author, **validated_data)
-
-
+# 포스트 목록용 serializer - 댓글 수 포함
 class PostListSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True)
     comments_count = serializers.SerializerMethodField()
@@ -89,5 +25,39 @@ class PostListSerializer(serializers.ModelSerializer):
         model = Post
         fields = ('id', 'title', 'author', 'comments_count', 'created_at', 'updated_at')
 
+    # 댓글 수 생성
     def get_comments_count(self, obj):
         return obj.comments.count()
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'content', 'author', 'post', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'author', 'created_at', 'updated_at')
+
+    # 로그인 한 사용자의 정보를 가져옴
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        return super().create(validated_data)
+
+class PostSerializer(serializers.ModelSerializer):
+    author = AuthorSerializer(read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
+    comments_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = ('id', 'title', 'content', 'author', 'comments', 'comments_count', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'author', 'created_at', 'updated_at')
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+
+    # 로그인 한 사용자의 정보를 가져옴
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        return super().create(validated_data)
+
