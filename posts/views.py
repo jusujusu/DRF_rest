@@ -5,6 +5,22 @@ from .models import Post, Comment
 from .serializers import PostSerializer, PostListSerializer, CommentSerializer
 
 
+"""
+comment를 가져오는 방법은 post에 post 조회 메서드, comment 뷰셋을 이용한 두 가지 방법이 적용 중
+두 방법은 가져오는 결과는 같지만 url 생성의 차이가 있음
+
+1. post 뷰셋에서 comments get 메서드는 
+    GET /posts/{post_id}/comments/ 
+2. comment 뷰셋에서는    
+    GET /comments/?post_id=12  
+
+어느 model을 기준으로 삼을지에 대해 url 주소가 달라지게 됨\
+post를 중심으로 할거면 post 뷰셋에 관련된 comment의 정보를 가져오는 메서드 생성
+
+"""
+
+
+
 # Post 모델을 위한 ViewSet으로, 모든 CRUD 작업을 자동으로 제공
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all() # ViewSet을 위한 쿼리셋
@@ -16,8 +32,8 @@ class PostViewSet(viewsets.ModelViewSet):
         return PostSerializer         # 다른 액션(조회, 생성, 업데이트)에는 상세 Serializer 사용
 
     # 특정 포스트의 댓글 조회
-    @action(detail=True, methods=['get'])
-    def comments(self, request, pk=None):
+    @action(detail=True, methods=['get'])   # @action을 사용해서 내부적으로 라우팅 경로 생성
+    def comments(self, request, pk=None):   # GET /posts/<pk>/comments/ 이런 url이 생성됨
         post = self.get_object() # 특정 Post 인스턴스 가져오기
         comments = post.comments.all() # 이 게시물과 관련된 모든 댓글 가져오기
         serializer = CommentSerializer(comments, many=True) # 댓글 직렬화
