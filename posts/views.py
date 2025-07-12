@@ -31,11 +31,13 @@ class PostViewSet(viewsets.ModelViewSet):
 
     # 액션에 따라 동적으로 Serializer를 선택
     def get_serializer_class(self):
+        # action이 'list'일 때
         if self.action == 'list':
             return PostListSerializer # 목록 보기에는 간략한 Serializer 사용
         return PostSerializer         # 다른 액션(조회, 생성, 업데이트)에는 상세 Serializer 사용
 
     # 특정 포스트의 댓글 조회
+    # url : /api/posts/{post_id}/comments/
     @action(detail=True, methods=['get'])   # @action을 사용해서 내부적으로 라우팅 경로 생성
     def comments(self, request, pk=None):   # GET /posts/<pk>/comments/ 이런 url이 생성됨
         post = self.get_object() # 특정 Post 인스턴스 가져오기
@@ -46,6 +48,7 @@ class PostViewSet(viewsets.ModelViewSet):
     # 특정 포스트에 댓글 작성
     # permission_classes=[IsAuthenticatedOrReadOnly]: 이 특정 액션에는 별도의 권한을 적용합니다.
     #   인증된 사용자만 댓글을 작성(POST)할 수 있으며, 인증되지 않은 사용자는 읽기만 가능
+    # url : /api/posts/{post_id}/add_comment/
     @action(detail=True, methods=['post'] ,permission_classes=[IsAuthenticatedOrReadOnly])
     def add_comment(self, request, pk=None):
         post = self.get_object() # 특정 Post 인스턴스 가져오기
