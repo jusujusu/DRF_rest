@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # DFR
-    'rest_framework',
+    'rest_framework',           # DFR
+    'rest_framework_simplejwt', # JWT
     # Local
     'posts',
 ]
@@ -124,11 +124,32 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # DRF 설정 (1단계에서는 인증 없이 모든 접근 허용)
 REST_FRAMEWORK = {
-    # 기본 권한 클래스: AllowAny는 모든 API 엔드포인트에 인증이 필요 없음
+    # JWT
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        # 'rest_framework.permissions.AllowAny',  # 기본 권한 클래스: AllowAny는 모든 API 엔드포인트에 인증이 필요 없음
+        'rest_framework.permissions.IsAuthenticated', # # 모든 API에 기본적으로 인증된 사용자만 접근 가능하도록 권한 설정
     ],
     # 페이지 설정
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+}
+
+# 커스텀 User 모델 설정
+AUTH_USER_MODEL = 'accounts.User'
+
+# JWT 관련 설정
+# 개발용 - 고정값
+SECRET_KEY = 'django-insecure-very-long-random-key-here-123456789'
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
